@@ -36,8 +36,11 @@
 		showCapitals: boolean;
 		selected: string | null;
 		onselect: (id: string) => void;
-		/** Pinch / Ctrl+wheel / drag to zoom and pan, with +/− buttons */
+		/** Pinch / wheel / drag to zoom and pan, with +/− buttons */
 		zoomable?: boolean;
+		/** Quiz feedback: shapes painted green (right) or red (wrong), the
+		 *  rest fades. Overrides the normal colors. */
+		marks?: Record<string, 'right' | 'wrong'>;
 	}
 	let {
 		topo,
@@ -46,7 +49,8 @@
 		showCapitals,
 		selected,
 		onselect,
-		zoomable = true
+		zoomable = true,
+		marks = {}
 	}: Props = $props();
 
 	// The SVG's internal coordinate system. CSS then scales it to fit the screen.
@@ -104,8 +108,10 @@
 		return fillOfState.get(String(uf));
 	}
 
-	// The selected shape (if any): used to fade everything else
-	const selectedShape = $derived(shapes.find((s) => s.id === selected));
+	// Selected shapes (the selection + any marked ones): everything else fades
+	const isSelected = (id: string) => id === selected || id in marks;
+	const MARK_FILL = { right: 'var(--color-kelp)', wrong: 'var(--color-coral)' };
+	const hasSelection = $derived(shapes.some((s) => isSelected(s.id)));
 
 	// Hover is only used inside this component, so it lives here.
 	let hovered = $state<string | null>(null);
@@ -130,10 +136,10 @@
 				[WIDTH, HEIGHT]
 			]) // can't drag the map out of view
 			.clickDistance(6) // a tiny wobble still counts as a click
-			// Mouse wheel only zooms with Ctrl (or a trackpad pinch, which the
-			// browser reports as Ctrl+wheel), so normal scrolling keeps working.
-			.filter((e: MouseEvent | WheelEvent | TouchEvent) =>
-				e.type === 'wheel' ? (e as WheelEvent).ctrlKey : !(e as MouseEvent).button
+			// The wheel zooms (pages with a map don't scroll on desktop, so it
+			// isn't needed for scrolling); dragging only with the main button.
+			.filter(
+				(e: MouseEvent | WheelEvent | TouchEvent) => e.type === 'wheel' || !(e as MouseEvent).button
 			)
 			.on('zoom', (e) => (transform = e.transform));
 		svg.call(zoomer).on('dblclick.zoom', null); // double-click = 2 clicks, not zoom
@@ -160,7 +166,7 @@
 	<svg
 		bind:this={svgEl}
 		viewBox="0 0 {WIDTH} {HEIGHT}"
-		class:has-selection={selectedShape !== undefined}
+		class:has-selection={hasSelection}
 		class:zoomable
 		role="group"
 		aria-label="Map of Brazil"
@@ -173,10 +179,10 @@
 				<!-- style:--x sets a CSS variable on this element only; the CSS uses it -->
 				<path
 					d={path(shape.feature) ?? ''}
-					style:--fill={fill}
+					style:--fill={marks[shape.id] ? MARK_FILL[marks[shape.id]] : fill}
 					class="zone"
 					class:hovered={hovered === shape.id}
-					class:selected={selected === shape.id}
+					class:selected={isSelected(shape.id)}
 					role="button"
 					tabindex="0"
 					aria-label={label(shape.id)}

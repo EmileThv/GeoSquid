@@ -13,7 +13,7 @@
 	import '@fontsource/barlow-semi-condensed/700.css';
 	import { resolve } from '$app/paths';
 	import { navigating, page } from '$app/state';
-	import type { RouteId } from '$app/types';
+	import type { StaticRoute } from '#lib';
 	import favicon from '#lib/assets/favicon.svg';
 	import Icon, { type IconName } from '#lib/Icon.svelte';
 	import Squid from '#lib/Squid.svelte';
@@ -22,15 +22,15 @@
 	let { children }: LayoutProps = $props();
 
 	// Pages without an href don't exist yet: shown greyed out with "Soon"
-	const NAV: { label: string; icon: IconName; href?: RouteId }[] = [
+	const NAV: { label: string; icon: IconName; href?: StaticRoute }[] = [
 		{ label: 'Home', icon: 'home', href: '/' },
 		{ label: 'Explore', icon: 'map', href: '/brazil' },
-		{ label: 'Learn', icon: 'learn' },
+		{ label: 'Learn', icon: 'learn', href: '/learn' },
 		{ label: 'Clues', icon: 'clues' },
 		{ label: 'Progress', icon: 'stats' }
 	];
 
-	function isActive(href?: RouteId) {
+	function isActive(href?: StaticRoute) {
 		if (!href) return false;
 		return href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href);
 	}
