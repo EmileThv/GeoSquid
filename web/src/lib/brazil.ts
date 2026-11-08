@@ -167,3 +167,43 @@ export function buildIndex(topo: Topology, capitals: Capital[]): BrazilIndex {
 
 	return { states, regions, ddds };
 }
+
+// ---------------------------------------------------------------------------
+// Clues (from Plonk It, built by data-prep/build-clues.py)
+// ---------------------------------------------------------------------------
+
+export type Strength = 'exclusive' | 'common' | 'rare';
+
+export interface Clue {
+	id: string;
+	category: string;
+	text: string;
+	note: string | null;
+	image: string | null; // path relative to /data/brazil/
+	imageSize: [number, number] | null; // [width, height] in pixels
+	states: Record<string, Strength>; // state code → how strongly it points there
+	regions: Record<string, Strength>; // region code → idem
+}
+
+export interface ClueFile {
+	source: string;
+	license: string;
+	attribution: string;
+	clues: Clue[];
+}
+
+const STRENGTH_ORDER: Record<Strength, number> = { exclusive: 0, common: 1, rare: 2 };
+
+// Clues that point to one state, strongest first
+export function cluesForState(clues: Clue[], uf: string): Clue[] {
+	return clues
+		.filter((c) => uf in c.states)
+		.sort((a, b) => STRENGTH_ORDER[a.states[uf]] - STRENGTH_ORDER[b.states[uf]]);
+}
+
+// Clues that point to a whole macro-region, strongest first
+export function cluesForRegion(clues: Clue[], region: string): Clue[] {
+	return clues
+		.filter((c) => region in c.regions)
+		.sort((a, b) => STRENGTH_ORDER[a.regions[region]] - STRENGTH_ORDER[b.regions[region]]);
+}

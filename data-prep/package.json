@@ -5,7 +5,8 @@
   "scripts": {
     "download": "bash download.sh",
     "gui": "mapshaper-gui",
-    "build": "bash build.sh"
+    "build": "bash build.sh",
+    "clues": "python3 -I build-clues.py"
   },
   "devDependencies": {
     "mapshaper": "^0.7.101"
