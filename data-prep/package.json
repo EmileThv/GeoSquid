@@ -1,0 +1,13 @@
+{
+  "name": "geosquid-data-prep",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "download": "bash download.sh",
+    "gui": "mapshaper-gui",
+    "build": "bash build.sh"
+  },
+  "devDependencies": {
+    "mapshaper": "^0.7.101"
+  }
+}

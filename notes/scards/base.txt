@@ -1,0 +1,61 @@
+User stories :
+" I have too many cards, they are difficult to keep organized and often are just all around and a mess "
+" Its hard to retrieve a card I know I have; I often have to look for it for a long time to find it "
+" I have no practical way to know what cards I have at home while i'm not at home. "
+
+Solution :
+
+ Creating twin apps to organize and store your card collection.
+
+ A database that stores the cards and a phone app to scan new cards in and manage your collection remotely and a desktop app / webpage to manage your collection on desktop
+
+ The Backend :
+
+ Two possibilites :
+
+ 1 - The backend with the db is hosted on a distant server.
+    pros :
+    Easier to manage
+    100% uptime
+    Great security
+
+    cons :
+    Cost that could grow massive if the app picks up users
+    Would mean the app can't remain free.
+
+ 2 - The backend would be self hosted by the users. Basically I'm thinking everything with the DB is on their own pcs. And when adding card with their phones the card would be "stored" locally until your turned on your pc and it's added to the database.
+
+    pros :
+    Free !
+    Keeps the collection 100% private since it's self hosted
+    Leaves way more room to play around ( other people could easily add features and whatnot to their installation of the app)
+
+    cons :
+    Obviously steeper learning curve for computer novices for setup
+    Might be difficult to implement in practice
+
+
+ The Frontend :
+
+ I'm thinking a desktop page to manage your collection at least CRUD on the database basically in a user friendly way and a phone app that would have a CRUD as well on the db as well as if possible a scanner where you could just take a picture of new cards ( maybe after setting like the game and the language ) and the app would recognize them and you wouldn't have to type the names of each cards.
+
+ The order of business :
+
+ 1 - Pick an option and set up the backend.
+
+ 2 - Making the desktop frontend shouldn't take that long
+
+ 3 - Making the phone app
+
+ 4 - Integrate the scanner to the app
+
+ Right now I am running an android however I would have a net part of my userbase using iphones. Maybe making it a website sounds better, but i've always felt websites on phone look cheap. I would not like to pay the apple fee tho so we probably have to find  away around that
+
+ Technologies :
+
+ Database : if distant hosted probably pgSQL, if self hosted it doesn't really matter, whichever is the easiest for the user to install.
+
+ Desktop frontend : I would be fine with a web page honestly, if it really comes down to it maybe an electron app or something but nothing fancy.
+
+ Phone app : I would like the phone app to be a proper one. Right now only android so java or kotlin comes to mind, maybe  kotlin for easier apple compatibility, we'll see.
+

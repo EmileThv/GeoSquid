@@ -1,0 +1,58 @@
+/*
+  GeoSquid design tokens. See STYLE.md for the rules behind them.
+  Everything defined in @theme becomes both a Tailwind utility
+  (bg-panel, text-squid, font-display…) and a CSS variable
+  (var(--color-panel)…) usable in component <style> blocks.
+*/
+@import 'tailwindcss';
+
+@theme {
+	/* Fonts (self-hosted via @fontsource, so they work offline in the PWA).
+	   Barlow: a sporty grotesk. Semi Condensed for titles and numbers. */
+	--font-sans: 'Barlow', ui-sans-serif, system-ui, sans-serif;
+	--font-display: 'Barlow Semi Condensed', 'Barlow', ui-sans-serif, sans-serif;
+
+	/* Surfaces, from the back of the app to the front */
+	--color-abyss: #0e0c13; /* app background, between panels */
+	--color-deep: #16131d; /* sidebar, top bar, bottom bar */
+	--color-panel: #1b1724; /* panel body */
+	--color-panel-head: #231e2e; /* panel title strip */
+	--color-reef: #2c2539; /* hover, inputs, progress track */
+	--color-line: #2e2738; /* borders */
+
+	/* Text */
+	--color-ink: #eee9f5; /* main text */
+	--color-mist: #a99cba; /* secondary text */
+	--color-fog: #6c6080; /* hints, disabled */
+
+	/* Accents */
+	--color-squid: #ee93ba; /* primary: Continue button, active nav, progress */
+	--color-on-squid: #2a0e1c; /* text on pink */
+	--color-kelp: #7fd3a7; /* correct / success / done */
+	--color-lilac: #b09be9; /* info */
+	--color-coral: #f08b7f; /* wrong / error */
+
+	/* Shapes: just enough rounding to not look sharp, never pill-shaped */
+	--radius-panel: 3px;
+}
+
+@layer base {
+	html {
+		color-scheme: dark;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	body {
+		@apply bg-abyss font-sans text-ink antialiased;
+	}
+
+	h1,
+	h2,
+	h3 {
+		@apply font-display;
+	}
+
+	:focus-visible {
+		@apply outline-2 outline-offset-2 outline-squid;
+	}
+}

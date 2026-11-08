@@ -1,0 +1,12 @@
+node_modules/
+
+# Raw downloads (~350 MB): recreate with `cd data-prep && npm run download`
+data-prep/raw/
+
+# Saved Plonk It page (private reference, not ours to redistribute)
+notes/GeoSquid
+notes/GeoSquid_files/
+
+# Editor leftovers
+*.kate-swp
+.*.kate-swp
