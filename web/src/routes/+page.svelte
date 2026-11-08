@@ -1,7 +1,8 @@
 <!--
   Home: an overview of the whole app, as a few panels.
-  Course progress, daily goal and the courses list are placeholders for
-  now (nothing is saved yet): they show what the app will look like.
+  The Brazil course shows the real theme units and the progress saved in
+  this browser; Continue opens the first unit not finished yet.
+  The daily goal and the other countries are placeholders for now.
 -->
 <script lang="ts">
 	import { goto } from '$app/navigation';
@@ -10,19 +11,19 @@
 	import Icon from '#lib/Icon.svelte';
 	import PageHeader from '#lib/PageHeader.svelte';
 	import Panel from '#lib/Panel.svelte';
-	import { REGION_NAMES, regionFill } from '#lib/brazil.js';
+	import { THEMES } from '#lib/course.js';
+	import { finishedCount, loadProgress, nextUnit, progress } from '#lib/progress.svelte.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
-	// The Brazil course: one unit per macro-region (placeholder progress)
-	const units = [
-		{ code: 'SE', done: 0, total: 12 },
-		{ code: 'S', done: 0, total: 10 },
-		{ code: 'CO', done: 0, total: 10 },
-		{ code: 'NE', done: 0, total: 16 },
-		{ code: 'N', done: 0, total: 12 }
-	];
+	// Progress lives in the browser: read it once the page is there
+	$effect(loadProgress);
+
+	// The Brazil course: one unit per theme
+	const next = $derived(THEMES.find((t) => t.id === nextUnit())!);
+	const percent = $derived(Math.round((finishedCount() / THEMES.length) * 100));
+	const allDone = $derived(finishedCount() === THEMES.length);
 
 	const courses = [
 		{ name: 'Brazil', status: 'In progress' },
@@ -37,79 +38,114 @@
 
 <PageHeader title="Home" crumbs={[{ label: 'GeoSquid' }]}>
 	{#snippet actions()}
-		<button
+		<a
+			href={resolve('/learn/[unit]', { unit: next.id })}
 			class="flex h-10 items-center gap-2 rounded-panel bg-squid px-4 font-display font-bold tracking-wide text-on-squid uppercase hover:brightness-105"
+			aria-label="Continue: {next.name}"
 		>
 			Continue
 			<Icon name="arrow" class="size-4" />
-		</button>
+		</a>
 	{/snippet}
 </PageHeader>
 
-<main class="grid gap-3 p-3 lg:grid-cols-3">
-	<!-- Current course -->
-	<Panel title="Current course" class="lg:col-span-2">
-		<div class="flex items-end justify-between gap-4">
-			<div>
-				<p class="font-display text-4xl font-bold">Brazil</p>
-				<p class="text-mist">5 units · states, area codes and clues</p>
+<!-- Tablet and desktop (md+): exactly one screen tall (minus the 4rem
+     header and its 1px border), no page scroll. Left: the course with the
+     clue of the day under it. Right: the map, taking whatever height the
+     courses list leaves. Phone: one column, course then clue (the map is
+     in the tab bar). -->
+<main
+	class="grid gap-3 p-3 md:h-[calc(100dvh-4rem-1px)] md:grid-cols-[minmax(0,2fr)_minmax(15rem,1fr)] md:grid-rows-1"
+>
+	<!-- Left column: the course, then the clue of the day right under it.
+	     The course panel ends where its list ends; on short screens it
+	     shrinks and its list scrolls inside (min-h-0). -->
+	<div class="flex min-h-0 flex-col gap-3">
+		<Panel title="Current course" class="min-h-0">
+			<div class="flex items-end justify-between gap-4">
+				<div>
+					<p class="font-display text-4xl font-bold">Brazil</p>
+					<p class="text-mist">{THEMES.length} units by theme · poles, lamps, plants…</p>
+				</div>
+				<p class="font-display text-3xl font-semibold text-mist tabular-nums">{percent}%</p>
 			</div>
-			<p class="font-display text-3xl font-semibold text-mist">0%</p>
-		</div>
-		<div class="mt-3 h-1.5 bg-reef"><div class="h-full w-0 bg-squid"></div></div>
+			<div class="mt-3 h-1.5 bg-reef">
+				<div class="h-full bg-squid" style:width="{percent}%"></div>
+			</div>
 
-		<!-- Phone: just the next unit and today's goal (the full list is desktop-only) -->
-		<div class="mt-3 divide-y divide-line md:hidden">
-			<p class="flex items-center gap-3 py-2.5">
-				<span class="size-3 shrink-0" style:background={regionFill(units[0].code)}></span>
-				<span class="font-medium">{REGION_NAMES[units[0].code]}</span>
-				<span class="ml-auto text-xs font-bold tracking-wide text-squid uppercase">Next</span>
-			</p>
-			<p class="flex items-center gap-2 py-2.5 text-mist">
+			<!-- Daily goal: placeholder until reviews exist -->
+			<p class="mt-2 flex items-center gap-2 text-sm text-mist">
 				<Icon name="flame" class="size-4 text-fog" />
 				<span><span class="text-ink tabular-nums">0 / 20</span> reviews today</span>
+				<span class="text-fog">·</span>
+				No streak yet
 			</p>
-		</div>
 
-		<ol class="mt-4 hidden divide-y divide-line md:block">
-			{#each units as unit, i (unit.code)}
-				<li class="flex items-center gap-3 py-2.5">
-					<span class="size-3 shrink-0" style:background={regionFill(unit.code)}></span>
-					<span class="font-medium">{REGION_NAMES[unit.code]}</span>
-					<span class="ml-auto text-sm text-mist tabular-nums">{unit.done} / {unit.total}</span>
-					{#if i === 0}
-						<span class="w-16 text-right text-xs font-bold tracking-wide text-squid uppercase"
-							>Next</span
+			<!-- Phone: just the next unit (the full list is for bigger screens) -->
+			<a
+				href={resolve('/learn/[unit]', { unit: next.id })}
+				class="mt-3 flex items-center gap-3 border-t border-line pt-3 md:hidden"
+			>
+				<span class="font-medium">{next.name}</span>
+				<span class="ml-auto text-xs font-bold tracking-wide text-squid uppercase">
+					{allDone ? 'Review' : 'Next'}
+				</span>
+			</a>
+
+			<!-- Every unit: best score when done, Next on the one Continue opens.
+		     All units are open: themes can be done in any order. -->
+			<ol class="mt-2 hidden divide-y divide-line border-t border-line md:block">
+				{#each THEMES as theme (theme.id)}
+					{@const result = progress.units[theme.id]}
+					<li>
+						<a
+							href={resolve('/learn/[unit]', { unit: theme.id })}
+							class="-mx-2 flex items-center gap-3 px-2 py-1.5 hover:bg-reef"
 						>
-					{:else}
-						<span class="flex w-16 justify-end text-fog"><Icon name="lock" class="size-4" /></span>
-					{/if}
-				</li>
-			{/each}
-		</ol>
-	</Panel>
-
-	<!-- Daily goal (desktop: on phone it's a line in the course panel) -->
-	<div class="hidden md:block">
-		<Panel title="Today" class="h-full">
-			<div class="flex h-full flex-col justify-between gap-6">
-				<div>
-					<p class="font-display text-5xl font-bold tabular-nums">
-						0<span class="text-2xl text-fog"> / 20</span>
+							<span class="shrink-0 font-medium whitespace-nowrap">{theme.name}</span>
+							<span class="min-w-0 truncate text-sm text-fog">{theme.blurb}</span>
+							{#if result}
+								<span
+									class="ml-auto flex shrink-0 items-center gap-1.5 text-sm text-kelp tabular-nums"
+								>
+									<Icon name="check" class="size-4" />
+									{result.best} / {result.total}
+								</span>
+							{:else if theme.id === next.id}
+								<span class="ml-auto shrink-0 text-xs font-bold tracking-wide text-squid uppercase"
+									>Next</span
+								>
+							{/if}
+						</a>
+					</li>
+				{/each}
+			</ol>
+		</Panel>
+		<!-- Clue of the day -->
+		<!-- Question and answer side by side on bigger screens, to keep it short -->
+		<Panel title="Clue of the day" class="shrink-0">
+			<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+				<p class="leading-snug">Where in Brazil do you find brown, mushroom-shaped insulators?</p>
+				{#if revealed}
+					<p class="shrink-0 sm:text-right">
+						<span class="font-display text-2xl font-bold text-kelp">Pernambuco</span>
+						<span class="block text-sm text-mist">Only there · Plonk It</span>
 					</p>
-					<p class="text-mist">reviews for your daily goal</p>
-				</div>
-				<div class="flex items-center gap-2 text-mist">
-					<Icon name="flame" class="size-5 text-fog" />
-					No streak yet
-				</div>
+				{:else}
+					<button
+						class="h-9 shrink-0 self-start rounded-panel border border-line bg-reef px-4 font-medium hover:border-mist sm:self-auto"
+						onclick={() => (revealed = true)}
+					>
+						Reveal
+					</button>
+				{/if}
 			</div>
 		</Panel>
 	</div>
 
-	<!-- Explore: small map preview (desktop: on phone, Explore is in the tab bar) -->
-	<div class="hidden md:block lg:col-span-2 lg:row-span-2">
-		<Panel title="Explore Brazil" class="h-full" flush>
+	<div class="flex min-h-0 flex-col gap-3">
+		<!-- Explore: the map shrinks to the height left in the column -->
+		<Panel title="Explore Brazil" class="hidden min-h-0 flex-1 md:flex" flush>
 			{#snippet action()}
 				<a
 					href={resolve('/brazil')}
@@ -118,28 +154,30 @@
 					Open map <Icon name="arrow" class="size-4" />
 				</a>
 			{/snippet}
-			<div class="mx-auto max-w-md p-4">
-				<BrazilMap
-					topo={data.topo}
-					capitals={data.capitals}
-					layer="regions"
-					showCapitals={false}
-					selected={null}
-					onselect={() => goto(resolve('/brazil'))}
-					zoomable={false}
-				/>
+			<div class="flex h-full items-center justify-center p-3">
+				<!-- flex-col: the map takes the full width of this box (in a row it
+				     would shrink to its smallest size and sit on the left) -->
+				<div class="flex aspect-square h-full max-w-full flex-col justify-center">
+					<BrazilMap
+						topo={data.topo}
+						capitals={data.capitals}
+						layer="regions"
+						showCapitals={false}
+						selected={null}
+						onselect={() => goto(resolve('/brazil'))}
+						zoomable
+					/>
+				</div>
 			</div>
 		</Panel>
-	</div>
 
-	<!-- Courses (desktop only for now) -->
-	<div class="hidden md:block">
-		<Panel title="Courses" class="h-full" flush>
+		<!-- Courses (bigger screens only for now) -->
+		<Panel title="Courses" class="hidden shrink-0 md:flex" flush>
 			<ul class="divide-y divide-line">
 				{#each courses as course (course.name)}
 					<li
 						class={[
-							'flex items-center justify-between px-4 py-3',
+							'flex items-center justify-between px-4 py-2',
 							course.status === 'Soon' && 'text-fog'
 						]}
 					>
@@ -150,22 +188,4 @@
 			</ul>
 		</Panel>
 	</div>
-
-	<!-- Clue of the day -->
-	<Panel title="Clue of the day">
-		<p class="text-lg leading-snug">
-			Where in Brazil do you find brown, mushroom-shaped insulators?
-		</p>
-		{#if revealed}
-			<p class="mt-3 font-display text-2xl font-bold text-kelp">Pernambuco</p>
-			<p class="mt-1 text-sm text-mist">Only there. Source: Plonk It</p>
-		{:else}
-			<button
-				class="mt-4 h-9 rounded-panel border border-line bg-reef px-4 font-medium hover:border-mist"
-				onclick={() => (revealed = true)}
-			>
-				Reveal
-			</button>
-		{/if}
-	</Panel>
 </main>

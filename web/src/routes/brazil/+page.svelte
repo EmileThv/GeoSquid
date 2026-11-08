@@ -147,7 +147,11 @@
 			<StateSearch states={[...index.states.values()]} onpick={(uf) => goTo('states', uf)} />
 		</div>
 
-		<div class="mx-auto max-w-2xl p-2 sm:p-4">
+		<!-- The map is square, so its width also sets its height. On md+ it's
+		     capped so the whole page fits the screen: 17rem (272px) is
+		     everything else above and below it (header + tabs, panel title,
+		     search, region key, padding). -->
+		<div class="mx-auto max-w-2xl p-2 sm:p-4 md:max-w-[min(42rem,calc(100dvh-17rem-2px))]">
 			<BrazilMap
 				topo={data.topo}
 				capitals={data.capitals}
