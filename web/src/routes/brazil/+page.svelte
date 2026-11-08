@@ -4,10 +4,22 @@
 -->
 <script lang="ts">
 	import BrazilMap from '#lib/BrazilMap.svelte';
+	import ClueCard from '#lib/ClueCard.svelte';
 	import Icon from '#lib/Icon.svelte';
 	import PageHeader from '#lib/PageHeader.svelte';
 	import Panel from '#lib/Panel.svelte';
-	import { buildIndex, LAYERS, REGION_NAMES, regionFill, type LayerId } from '#lib/brazil.js';
+	import StateSearch from '#lib/StateSearch.svelte';
+	import {
+		buildIndex,
+		cluesForRegion,
+		cluesForState,
+		LAYERS,
+		REGION_NAMES,
+		regionFill,
+		type Clue,
+		type LayerId,
+		type Strength
+	} from '#lib/brazil.js';
 	import type { PageProps } from './$types';
 
 	// `data` is whatever +page.ts's load function returned
@@ -49,7 +61,54 @@
 	const ddd = $derived(layer === 'ddd' && selected ? index.ddds.get(Number(selected)) : undefined);
 
 	const layerLabel = $derived(LAYERS.find((l) => l.id === layer)!.label);
+
+	// Plonk It clues for the selection: the state's own clues, then the ones
+	// for its whole region. For a region: the region-wide clues.
+	const allClues = $derived(data.clues.clues);
+	const stateClues = $derived(stateInfo ? cluesForState(allClues, stateInfo.uf) : []);
+	const stateRegionClues = $derived(stateInfo ? cluesForRegion(allClues, stateInfo.region) : []);
+	const regionClues = $derived(region ? cluesForRegion(allClues, region.code) : []);
+
+	// Other states a clue is *also* exclusive to (for "Only here & RR")
+	function alsoExclusive(clue: Clue, uf: string): string[] {
+		return Object.entries(clue.states)
+			.filter(([other, s]) => other !== uf && s === 'exclusive')
+			.map(([other]) => other);
+	}
 </script>
+
+<!-- A titled list of clues. `strengthOf` says how strongly each clue points
+     to the place being viewed; `shared` lists other exclusive places. -->
+{#snippet clueList(
+	title: string,
+	clues: Clue[],
+	strengthOf: (c: Clue) => Strength,
+	shared: (c: Clue) => string[] = () => []
+)}
+	{#if clues.length}
+		<h3 class="mt-6 flex items-baseline justify-between text-lg font-semibold">
+			{title}
+			<span class="text-sm font-normal text-mist tabular-nums">{clues.length}</span>
+		</h3>
+		<div class="divide-y divide-line">
+			{#each clues as clue (clue.id)}
+				<ClueCard {clue} strength={strengthOf(clue)} sharedWith={shared(clue)} />
+			{/each}
+		</div>
+	{/if}
+{/snippet}
+
+<!-- Credit line under the clues (required by Plonk It's license) -->
+{#snippet credit()}
+	<p class="mt-2 border-t border-line pt-3 text-xs text-fog">
+		Clues and photos:
+		<!-- External link (Plonk It), so no resolve() -->
+		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+		<a href={data.clues.source} class="underline hover:text-mist" target="_blank" rel="noreferrer"
+			>Plonk It</a
+		>, {data.clues.license}
+	</p>
+{/snippet}
 
 <!-- A link-like button that jumps somewhere on the map -->
 {#snippet jump(text: string, onclick: () => void)}
@@ -82,6 +141,11 @@
 				Capitals
 			</label>
 		{/snippet}
+
+		<!-- Search: picking a state shows it on the states layer -->
+		<div class="border-b border-line p-2 sm:px-4">
+			<StateSearch states={[...index.states.values()]} onpick={(uf) => goTo('states', uf)} />
+		</div>
 
 		<div class="mx-auto max-w-2xl p-2 sm:p-4">
 			<BrazilMap
@@ -121,7 +185,7 @@
 			'lg:sticky lg:inset-auto lg:top-3 lg:z-auto lg:block'
 		]}
 	>
-		<Panel title="Details" class="max-h-[40dvh] lg:max-h-none">
+		<Panel title="Details" class="max-h-[50dvh] lg:max-h-[calc(100dvh-8.75rem)]">
 			{#snippet action()}
 				<button
 					class="grid size-8 place-items-center text-mist hover:text-ink lg:hidden"
@@ -157,6 +221,19 @@
 						</dd>
 					</div>
 				</dl>
+
+				{@render clueList(
+					'Clues',
+					stateClues,
+					(c) => c.states[stateInfo.uf],
+					(c) => alsoExclusive(c, stateInfo.uf)
+				)}
+				{@render clueList(
+					`Across the ${REGION_NAMES[stateInfo.region]}`,
+					stateRegionClues,
+					(c) => c.regions[stateInfo.region]
+				)}
+				{#if stateClues.length || stateRegionClues.length}{@render credit()}{/if}
 			{:else if region}
 				<p class="font-display text-3xl font-bold">{region.name}</p>
 				<ul class="mt-3 divide-y divide-line">
@@ -172,6 +249,9 @@
 						</li>
 					{/each}
 				</ul>
+
+				{@render clueList('Region-wide clues', regionClues, (c) => c.regions[region.code])}
+				{#if regionClues.length}{@render credit()}{/if}
 			{:else if ddd}
 				<p class="font-display text-5xl font-bold tabular-nums">{ddd.ddd}</p>
 				<p class="mt-1 text-mist">
