@@ -17,9 +17,13 @@
 	import favicon from '#lib/assets/favicon.svg';
 	import Icon, { type IconName } from '#lib/Icon.svelte';
 	import Squid from '#lib/Squid.svelte';
+	import { startSync } from '#lib/sync.svelte.js';
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
+
+	// Sync progress with the other devices (if this one has a sync code)
+	$effect(startSync);
 
 	// Pages without an href don't exist yet: shown greyed out with "Soon"
 	const NAV: { label: string; icon: IconName; href?: StaticRoute }[] = [
@@ -29,6 +33,11 @@
 		{ label: 'Clues', icon: 'clues' },
 		{ label: 'Progress', icon: 'stats' }
 	];
+
+	// Settings sits apart: bottom of the sidebar, last tab on phone
+	const SETTINGS = { label: 'Settings', icon: 'settings', href: '/settings' } as const;
+	// Phone tab bar: the pages that exist, then Settings
+	const TABS = [...NAV.filter((item) => item.href), SETTINGS];
 
 	function isActive(href?: StaticRoute) {
 		if (!href) return false;
@@ -80,10 +89,19 @@
 		</nav>
 
 		<div class="border-t border-line p-2">
-			<span class="flex items-center gap-3 px-3 py-2.5 font-medium text-fog">
-				<Icon name="settings" />
-				Settings
-			</span>
+			<a
+				href={resolve(SETTINGS.href)}
+				class={[
+					'relative flex items-center gap-3 rounded-panel px-3 py-2.5 font-medium',
+					isActive(SETTINGS.href) ? 'bg-reef text-ink' : 'text-mist hover:bg-panel hover:text-ink'
+				]}
+			>
+				{#if isActive(SETTINGS.href)}
+					<span class="absolute inset-y-1.5 left-0 w-[3px] bg-squid"></span>
+				{/if}
+				<Icon name={SETTINGS.icon} />
+				{SETTINGS.label}
+			</a>
 		</div>
 	</aside>
 
@@ -96,7 +114,7 @@
 	<nav
 		class="fixed inset-x-0 bottom-0 z-10 flex border-t border-line bg-deep pb-[env(safe-area-inset-bottom)] md:hidden"
 	>
-		{#each NAV.slice(0, 4) as item (item.label)}
+		{#each TABS as item (item.label)}
 			<a
 				href={item.href ? resolve(item.href) : null}
 				aria-disabled={!item.href}

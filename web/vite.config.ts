@@ -1,4 +1,6 @@
-import adapter from '@sveltejs/adapter-static';
+// Vercel: the pages are still prerendered as static files (see
+// src/routes/+layout.ts); only /api/sync runs as a server function.
+import adapter from '@sveltejs/adapter-vercel';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';

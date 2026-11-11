@@ -3,7 +3,7 @@
 # raw/ is not committed to git (too big); this script recreates it.
 set -euo pipefail
 cd "$(dirname "$0")"
-mkdir -p raw/ibge raw/municipios raw/cep
+mkdir -p raw/ibge raw/municipios raw/cep raw/lexique
 
 # IBGE 2025 outlines: municipalities, states (UF), macro-regions. Official, open data.
 IBGE=https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/malhas_municipais/municipio_2025/Brasil
@@ -32,4 +32,9 @@ ws = openpyxl.load_workbook("raw/cep/ceps.xlsx", read_only=True).active
 with open("raw/cep/ceps.csv", "w", newline="", encoding="utf-8") as f:
     csv.writer(f).writerows(ws.iter_rows(values_only=True))
 '
+# Lexique 3.83: French words with their frequency (CC BY-SA 4.0).
+# http://www.lexique.org — used for the two-word sync codes (build-sync-words.py)
+curl -sS --fail -L -o raw/lexique/Lexique383.zip http://www.lexique.org/databases/Lexique383/Lexique383.zip
+unzip -o -q raw/lexique/Lexique383.zip Lexique383.tsv -d raw/lexique
+rm raw/lexique/Lexique383.zip
 echo "Done. Raw data is in data-prep/raw/"

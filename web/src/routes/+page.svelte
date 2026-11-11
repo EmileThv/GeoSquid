@@ -1,18 +1,26 @@
 <!--
   Home: an overview of the whole app, as a few panels.
-  The Brazil course shows the real theme units and the progress saved in
-  this browser; Continue opens the first unit not finished yet.
+  The Brazil course shows the decks you learn and the progress saved in
+  this browser; Continue opens the next lesson (see ContinueButton).
   The daily goal and the other countries are placeholders for now.
 -->
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import BrazilMap from '#lib/BrazilMap.svelte';
+	import ContinueButton from '#lib/ContinueButton.svelte';
 	import Icon from '#lib/Icon.svelte';
 	import PageHeader from '#lib/PageHeader.svelte';
 	import Panel from '#lib/Panel.svelte';
-	import { THEMES } from '#lib/course.js';
-	import { finishedCount, loadProgress, nextUnit, progress } from '#lib/progress.svelte.js';
+	import { DECKS } from '#lib/course.js';
+	import {
+		deckLearned,
+		isDeckOn,
+		lessonNumber,
+		loadProgress,
+		nextLesson,
+		path
+	} from '#lib/progress.svelte.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -20,10 +28,13 @@
 	// Progress lives in the browser: read it once the page is there
 	$effect(loadProgress);
 
-	// The Brazil course: one unit per theme
-	const next = $derived(THEMES.find((t) => t.id === nextUnit())!);
-	const percent = $derived(Math.round((finishedCount() / THEMES.length) * 100));
-	const allDone = $derived(finishedCount() === THEMES.length);
+	// The Brazil course: the topics you learn and the cards learned in each
+	const onDecks = $derived(DECKS.filter((d) => isDeckOn(d.id)));
+	const next = $derived(nextLesson());
+	const totalLessons = $derived(path().length);
+	const totalCards = $derived(onDecks.reduce((n, d) => n + d.cardIds.length, 0));
+	const learnedCards = $derived(onDecks.reduce((n, d) => n + deckLearned(d.id), 0));
+	const percent = $derived(totalCards ? Math.round((learnedCards / totalCards) * 100) : 0);
 
 	const courses = [
 		{ name: 'Brazil', status: 'In progress' },
@@ -38,14 +49,7 @@
 
 <PageHeader title="Home" crumbs={[{ label: 'GeoSquid' }]}>
 	{#snippet actions()}
-		<a
-			href={resolve('/learn/[unit]', { unit: next.id })}
-			class="flex h-10 items-center gap-2 rounded-panel bg-squid px-4 font-display font-bold tracking-wide text-on-squid uppercase hover:brightness-105"
-			aria-label="Continue: {next.name}"
-		>
-			Continue
-			<Icon name="arrow" class="size-4" />
-		</a>
+		<ContinueButton />
 	{/snippet}
 </PageHeader>
 
@@ -65,7 +69,12 @@
 			<div class="flex items-end justify-between gap-4">
 				<div>
 					<p class="font-display text-4xl font-bold">Brazil</p>
-					<p class="text-mist">{THEMES.length} units by theme · poles, lamps, plants…</p>
+					<p class="text-mist">
+						{learnedCards} / {totalCards} cards · {totalLessons} lessons ·
+						<a href={resolve('/learn')} class="underline-offset-2 hover:text-ink hover:underline"
+							>change</a
+						>
+					</p>
 				</div>
 				<p class="font-display text-3xl font-semibold text-mist tabular-nums">{percent}%</p>
 			</div>
@@ -81,41 +90,48 @@
 				No streak yet
 			</p>
 
-			<!-- Phone: just the next unit (the full list is for bigger screens) -->
-			<a
-				href={resolve('/learn/[unit]', { unit: next.id })}
-				class="mt-3 flex items-center gap-3 border-t border-line pt-3 md:hidden"
-			>
-				<span class="font-medium">{next.name}</span>
-				<span class="ml-auto text-xs font-bold tracking-wide text-squid uppercase">
-					{allDone ? 'Review' : 'Next'}
-				</span>
-			</a>
+			<!-- Phone: just the next lesson (the full list is for bigger screens) -->
+			{#if next}
+				<a
+					href={resolve(`/learn/lesson?id=${next.id}`)}
+					class="mt-3 flex items-center gap-3 border-t border-line pt-3 md:hidden"
+				>
+					<span class="min-w-0 truncate font-medium">
+						<span class="text-mist tabular-nums">Lesson {lessonNumber(next.id)}</span>
+						· {next.title}
+					</span>
+					<span class="ml-auto shrink-0 text-xs font-bold tracking-wide text-squid uppercase"
+						>Next</span
+					>
+				</a>
+			{/if}
 
-			<!-- Every unit: best score when done, Next on the one Continue opens.
-		     All units are open: themes can be done in any order. -->
-			<ol class="mt-2 hidden divide-y divide-line border-t border-line md:block">
-				{#each THEMES as theme (theme.id)}
-					{@const result = progress.units[theme.id]}
-					<li>
+			<!-- Every topic you learn: cards learned, Next on the one the next
+			     lesson mixes. Two columns so ten topics fit a laptop screen. -->
+			<ol class="mt-2 hidden border-t border-line md:grid md:grid-cols-2 md:gap-x-6">
+				{#each onDecks as deck (deck.id)}
+					{@const learned = deckLearned(deck.id)}
+					{@const all = deck.cardIds.length}
+					<li class="border-b border-line">
 						<a
-							href={resolve('/learn/[unit]', { unit: theme.id })}
+							href={resolve('/learn')}
 							class="-mx-2 flex items-center gap-3 px-2 py-1.5 hover:bg-reef"
 						>
-							<span class="shrink-0 font-medium whitespace-nowrap">{theme.name}</span>
-							<span class="min-w-0 truncate text-sm text-fog">{theme.blurb}</span>
-							{#if result}
+							<span class="min-w-0 truncate font-medium">{deck.name}</span>
+							<span class="ml-auto flex shrink-0 items-center gap-3">
+								{#if next?.deck === deck.id}
+									<span class="text-xs font-bold tracking-wide text-squid uppercase">Next</span>
+								{/if}
 								<span
-									class="ml-auto flex shrink-0 items-center gap-1.5 text-sm text-kelp tabular-nums"
+									class={[
+										'flex items-center gap-1.5 text-sm tabular-nums',
+										learned === all ? 'text-kelp' : 'text-mist'
+									]}
 								>
-									<Icon name="check" class="size-4" />
-									{result.best} / {result.total}
+									{#if learned === all}<Icon name="check" class="size-4" />{/if}
+									{learned} / {all}
 								</span>
-							{:else if theme.id === next.id}
-								<span class="ml-auto shrink-0 text-xs font-bold tracking-wide text-squid uppercase"
-									>Next</span
-								>
-							{/if}
+							</span>
 						</a>
 					</li>
 				{/each}

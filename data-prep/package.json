@@ -6,7 +6,8 @@
     "download": "bash download.sh",
     "gui": "mapshaper-gui",
     "build": "bash build.sh",
-    "clues": "python3 -I build-clues.py"
+    "clues": "python3 -I build-clues.py",
+    "sync-words": "python3 -I build-sync-words.py"
   },
   "devDependencies": {
     "mapshaper": "^0.7.101"

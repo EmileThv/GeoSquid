@@ -1,2 +1,3 @@
-// Build every page as a static HTML file (no server needed: adapter-static).
+// Build every page as a static HTML file. Only /api/sync runs on the server
+// (it says prerender = false).
 export const prerender = true;
